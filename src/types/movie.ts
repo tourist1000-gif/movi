@@ -25,4 +25,5 @@ export interface MovieVideo {
   official: boolean;
   embedUrl: string;
   watchUrl: string;
+  source: "tmdb" | "youtube";
 }

@@ -152,6 +152,7 @@ function mapVideo(video: TmdbVideo): MovieVideo | null {
     official: video.official,
     embedUrl: `https://www.youtube.com/embed/${video.key}?autoplay=1&rel=0`,
     watchUrl: `https://www.youtube.com/watch?v=${video.key}`,
+    source: "tmdb",
   };
 }
 

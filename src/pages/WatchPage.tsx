@@ -8,8 +8,15 @@ import { formatRuntime } from "../lib/tmdb";
 export default function WatchPage() {
   const { id } = useParams();
   const movieId = id ? Number(id) : null;
-  const { movie, videos, selectedVideo, setSelectedVideo, loading, error } =
-    useWatchPage(movieId);
+  const {
+    movie,
+    videos,
+    selectedVideo,
+    setSelectedVideo,
+    videoSource,
+    loading,
+    error,
+  } = useWatchPage(movieId);
 
   if (loading) return <LoadingScreen />;
   if (error || !movie) return <ErrorScreen message={error ?? "영화를 찾을 수 없습니다."} />;
@@ -38,6 +45,12 @@ export default function WatchPage() {
             </a>
           )}
         </div>
+
+        {videoSource === "youtube" && (
+          <div className="mb-4 rounded-lg border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-[#aaa]">
+            TMDB 예고편이 없어 YouTube에서 관련 영상을 검색해 표시합니다.
+          </div>
+        )}
 
         {selectedVideo ? (
           <div className="overflow-hidden rounded-lg bg-black shadow-2xl ring-1 ring-[#333]">
@@ -89,7 +102,7 @@ export default function WatchPage() {
         {videos.length > 1 && (
           <section className="mt-10">
             <h2 className="mb-4 text-lg font-semibold text-white">
-              관련 영상
+              {videoSource === "youtube" ? "YouTube 관련 영상" : "관련 영상"}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map((video) => {
@@ -111,7 +124,11 @@ export default function WatchPage() {
                       {video.name}
                     </p>
                     <p className="mt-1 text-xs text-[#777]">
-                      {video.official ? "공식" : "비공식"} · YouTube
+                      {video.source === "youtube"
+                        ? "YouTube 검색"
+                        : video.official
+                          ? "공식 · YouTube"
+                          : "비공식 · YouTube"}
                     </p>
                   </button>
                 );

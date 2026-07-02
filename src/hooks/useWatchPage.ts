@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { fetchMovieDetail, fetchMovieVideos } from "../lib/tmdb";
+import { loadWatchPageData } from "../lib/videos";
+import type { VideoSource } from "../lib/videos";
 import type { MovieDetail, MovieVideo } from "../types/movie";
 
 export function useWatchPage(id: number | null) {
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [videos, setVideos] = useState<MovieVideo[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<MovieVideo | null>(null);
+  const [videoSource, setVideoSource] = useState<VideoSource | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,19 +25,17 @@ export function useWatchPage(id: number | null) {
         setLoading(true);
         setError(null);
 
-        const [movieData, videoData] = await Promise.all([
-          fetchMovieDetail(id!),
-          fetchMovieVideos(id!),
-        ]);
+        const data = await loadWatchPageData(id!);
 
         if (cancelled) return;
 
-        setMovie(movieData);
-        setVideos(videoData);
-        setSelectedVideo(videoData[0] ?? null);
+        setMovie(data.movie);
+        setVideos(data.videos);
+        setVideoSource(data.source);
+        setSelectedVideo(data.videos[0] ?? null);
 
-        if (videoData.length === 0) {
-          setError("재생 가능한 예고편 영상을 찾지 못했습니다.");
+        if (data.videos.length === 0) {
+          setError("재생 가능한 예고편·관련 영상을 찾지 못했습니다.");
         }
       } catch (err) {
         if (!cancelled) {
@@ -54,5 +54,13 @@ export function useWatchPage(id: number | null) {
     };
   }, [id]);
 
-  return { movie, videos, selectedVideo, setSelectedVideo, loading, error };
+  return {
+    movie,
+    videos,
+    selectedVideo,
+    setSelectedVideo,
+    videoSource,
+    loading,
+    error,
+  };
 }
