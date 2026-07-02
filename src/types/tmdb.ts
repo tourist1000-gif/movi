@@ -6,9 +6,6 @@ export interface TmdbMovieListItem {
   backdrop_path: string | null;
   release_date: string;
   vote_average: number;
-  vote_count: number;
-  popularity: number;
-  genre_ids: number[];
 }
 
 export interface TmdbPaginatedResponse<T> {
@@ -23,17 +20,10 @@ export interface TmdbGenre {
   name: string;
 }
 
-export interface TmdbProductionCompany {
-  id: number;
-  name: string;
-  logo_path: string | null;
-}
-
 export interface TmdbCastMember {
   id: number;
   name: string;
   character: string;
-  profile_path: string | null;
   order: number;
 }
 
@@ -41,7 +31,6 @@ export interface TmdbCrewMember {
   id: number;
   name: string;
   job: string;
-  department: string;
 }
 
 export interface TmdbCredits {
@@ -49,9 +38,18 @@ export interface TmdbCredits {
   crew: TmdbCrewMember[];
 }
 
-export interface TmdbMovieDetails extends TmdbMovieListItem {
+export interface TmdbMovieDetailsResponse {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  release_date: string;
+  vote_average: number;
   runtime: number | null;
   genres: TmdbGenre[];
-  production_companies: TmdbProductionCompany[];
+  tagline: string;
   credits: TmdbCredits;
 }
+
+export interface TmdbSearchResponse extends TmdbPaginatedResponse<TmdbMovieListItem> {}

@@ -1,26 +1,17 @@
-export interface Movie {
-  id: string;
+export interface NowPlayingMovie {
+  id: number;
   title: string;
-  studio: string;
-  studioLogo: string;
-  verified: boolean;
-  releasedAgo: string;
-  poster: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  likedBy: string;
-  synopsis: string;
-  director: string;
-  cast: string[];
+  posterUrl: string;
+  backdropUrl: string;
+  overview: string;
+  releaseDate: string;
   rating: number;
-  genre: string;
-  duration: string;
 }
 
-export interface TrendingMovie {
-  id: string;
-  title: string;
-  poster: string;
-  isNew?: boolean;
+export interface MovieDetail extends NowPlayingMovie {
+  runtime: number | null;
+  genres: string[];
+  director: string;
+  cast: string[];
+  tagline: string;
 }

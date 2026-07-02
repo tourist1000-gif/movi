@@ -1,33 +1,23 @@
+import type { MovieDetail, NowPlayingMovie } from "../types/movie";
 import type {
-  TmdbMovieDetails,
+  TmdbMovieDetailsResponse,
   TmdbMovieListItem,
   TmdbPaginatedResponse,
+  TmdbSearchResponse,
 } from "../types/tmdb";
 
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMAGE_BASE = "https://image.tmdb.org/t/p";
 
-export type ImageSize = "w92" | "w185" | "w500" | "original";
+const PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450' viewBox='0 0 300 450'%3E%3Crect fill='%23222222' width='300' height='450'/%3E%3Ctext x='50%25' y='50%25' fill='%23555' font-size='16' text-anchor='middle' dominant-baseline='middle' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-const PLACEHOLDER_POSTER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='750' viewBox='0 0 500 750'%3E%3Crect fill='%23121212' width='500' height='750'/%3E%3Ctext x='50%25' y='50%25' fill='%23363636' font-size='24' text-anchor='middle' dominant-baseline='middle' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E";
-
-export function getApiKey(): string {
+function getApiKey(): string {
   const key = import.meta.env.VITE_TMDB_API_KEY;
   if (!key) {
-    throw new Error(
-      "VITE_TMDB_API_KEY가 설정되지 않았습니다. .env 파일을 확인해 주세요.",
-    );
+    throw new Error("VITE_TMDB_API_KEY가 .env 파일에 설정되어 있지 않습니다.");
   }
   return key;
-}
-
-export function getImageUrl(
-  path: string | null | undefined,
-  size: ImageSize = "w500",
-): string {
-  if (!path) return PLACEHOLDER_POSTER;
-  return `${IMAGE_BASE}/${size}${path}`;
 }
 
 async function tmdbFetch<T>(
@@ -45,41 +35,97 @@ async function tmdbFetch<T>(
   const response = await fetch(url.toString());
 
   if (!response.ok) {
-    const message =
+    throw new Error(
       response.status === 401
         ? "TMDB API 키가 유효하지 않습니다."
-        : `TMDB API 오류 (${response.status})`;
-    throw new Error(message);
+        : `요청에 실패했습니다. (${response.status})`,
+    );
   }
 
   return response.json() as Promise<T>;
 }
 
-export async function fetchTrendingMovies(): Promise<TmdbMovieListItem[]> {
-  const data = await tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>(
-    "/trending/movie/day",
-  );
-  return data.results;
+export function getPosterUrl(path: string | null): string {
+  if (!path) return PLACEHOLDER;
+  return `${IMAGE_BASE}/w500${path}`;
 }
 
-export async function fetchPopularMovies(): Promise<TmdbMovieListItem[]> {
-  const data = await tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>(
-    "/movie/popular",
-  );
-  return data.results.slice(0, 10);
+export function getBackdropUrl(path: string | null): string {
+  if (!path) return PLACEHOLDER;
+  return `${IMAGE_BASE}/w1280${path}`;
 }
 
-export async function fetchMovieDetails(
-  movieId: number,
-): Promise<TmdbMovieDetails> {
-  return tmdbFetch<TmdbMovieDetails>(`/movie/${movieId}`, {
+function mapListItem(item: TmdbMovieListItem): NowPlayingMovie {
+  return {
+    id: item.id,
+    title: item.title,
+    posterUrl: getPosterUrl(item.poster_path),
+    backdropUrl: getBackdropUrl(item.backdrop_path ?? item.poster_path),
+    overview: item.overview,
+    releaseDate: item.release_date,
+    rating: Math.round(item.vote_average * 10) / 10,
+  };
+}
+
+function mapDetail(data: TmdbMovieDetailsResponse): MovieDetail {
+  const director =
+    data.credits?.crew.find((member) => member.job === "Director")?.name ??
+    "정보 없음";
+
+  const cast =
+    data.credits?.cast
+      .slice(0, 8)
+      .map((member) => member.name)
+      .filter(Boolean) ?? [];
+
+  return {
+    id: data.id,
+    title: data.title,
+    posterUrl: getPosterUrl(data.poster_path),
+    backdropUrl: getBackdropUrl(data.backdrop_path ?? data.poster_path),
+    overview: data.overview,
+    releaseDate: data.release_date,
+    rating: Math.round(data.vote_average * 10) / 10,
+    runtime: data.runtime,
+    genres: data.genres.map((g) => g.name),
+    director,
+    cast: cast.length > 0 ? cast : ["정보 없음"],
+    tagline: data.tagline,
+  };
+}
+
+export function formatRuntime(minutes: number | null): string {
+  if (!minutes) return "정보 없음";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}분`;
+  if (mins === 0) return `${hours}시간`;
+  return `${hours}시간 ${mins}분`;
+}
+
+export async function fetchNowPlaying(): Promise<NowPlayingMovie[]> {
+  const data = await tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>(
+    "/movie/now_playing",
+    { region: "KR" },
+  );
+  return data.results.map(mapListItem);
+}
+
+export async function fetchMovieDetail(id: number): Promise<MovieDetail> {
+  const data = await tmdbFetch<TmdbMovieDetailsResponse>(`/movie/${id}`, {
     append_to_response: "credits",
   });
+  return mapDetail(data);
 }
 
-export async function fetchPopularMoviesWithDetails(): Promise<
-  TmdbMovieDetails[]
-> {
-  const popular = await fetchPopularMovies();
-  return Promise.all(popular.map((movie) => fetchMovieDetails(movie.id)));
+export async function searchMovies(query: string): Promise<NowPlayingMovie[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const data = await tmdbFetch<TmdbSearchResponse>("/search/movie", {
+    query: trimmed,
+    include_adult: "false",
+  });
+
+  return data.results.map(mapListItem);
 }
