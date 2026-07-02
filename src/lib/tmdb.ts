@@ -168,6 +168,24 @@ function sortVideos(a: MovieVideo, b: MovieVideo): number {
 
 export async function fetchMovieVideos(movieId: number): Promise<MovieVideo[]> {
   const data = await tmdbFetch<TmdbVideosResponse>(`/movie/${movieId}/videos`);
+  const videos = data.results
+    .map(mapVideo)
+    .filter((video): video is MovieVideo => video !== null)
+    .sort(sortVideos);
+
+  if (videos.length > 0) return videos;
+
+  return fetchMovieVideosFallback(movieId);
+}
+
+async function fetchMovieVideosFallback(movieId: number): Promise<MovieVideo[]> {
+  const url = new URL(`${BASE_URL}/movie/${movieId}/videos`);
+  url.searchParams.set("api_key", getApiKey());
+
+  const response = await fetch(url.toString());
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as TmdbVideosResponse;
   return data.results
     .map(mapVideo)
     .filter((video): video is MovieVideo => video !== null)
