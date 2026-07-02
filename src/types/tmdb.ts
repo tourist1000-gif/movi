@@ -53,3 +53,17 @@ export interface TmdbMovieDetailsResponse {
 }
 
 export interface TmdbSearchResponse extends TmdbPaginatedResponse<TmdbMovieListItem> {}
+
+export interface TmdbVideo {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+}
+
+export interface TmdbVideosResponse {
+  id: number;
+  results: TmdbVideo[];
+}

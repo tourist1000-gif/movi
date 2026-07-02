@@ -28,13 +28,13 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
           {movie.overview || "줄거리 정보가 없습니다."}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3 md:mt-6">
-          <button
-            type="button"
+          <Link
+            to={`/movie/${movie.id}/watch`}
             className="flex items-center gap-2 rounded bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-white/80 md:px-6 md:py-2.5 md:text-base"
           >
             <HiPlay className="h-5 w-5" />
             재생
-          </button>
+          </Link>
           <Link
             to={`/movie/${movie.id}`}
             className="flex items-center gap-2 rounded bg-[#6d6d6e]/70 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-[#6d6d6e]/50 md:px-6 md:py-2.5 md:text-base"

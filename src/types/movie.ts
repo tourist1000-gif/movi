@@ -15,3 +15,14 @@ export interface MovieDetail extends NowPlayingMovie {
   cast: string[];
   tagline: string;
 }
+
+export interface MovieVideo {
+  id: string;
+  name: string;
+  key: string;
+  site: string;
+  type: string;
+  official: boolean;
+  embedUrl: string;
+  watchUrl: string;
+}

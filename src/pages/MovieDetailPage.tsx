@@ -63,13 +63,13 @@ export default function MovieDetailPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
+              <Link
+                to={`/movie/${movie.id}/watch`}
                 className="flex items-center gap-2 rounded bg-white px-6 py-2.5 text-sm font-semibold text-black transition hover:bg-white/80"
               >
                 <HiPlay className="h-5 w-5" />
                 재생
-              </button>
+              </Link>
               <button
                 type="button"
                 className="flex items-center gap-2 rounded border border-[#555] bg-[#6d6d6e]/40 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6d6d6e]/60"

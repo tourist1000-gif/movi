@@ -1,9 +1,11 @@
-import type { MovieDetail, NowPlayingMovie } from "../types/movie";
+import type { MovieDetail, MovieVideo, NowPlayingMovie } from "../types/movie";
 import type {
   TmdbMovieDetailsResponse,
   TmdbMovieListItem,
   TmdbPaginatedResponse,
   TmdbSearchResponse,
+  TmdbVideo,
+  TmdbVideosResponse,
 } from "../types/tmdb";
 
 const BASE_URL = "https://api.themoviedb.org/3";
@@ -128,4 +130,49 @@ export async function searchMovies(query: string): Promise<NowPlayingMovie[]> {
   });
 
   return data.results.map(mapListItem);
+}
+
+const VIDEO_TYPE_PRIORITY: Record<string, number> = {
+  Trailer: 0,
+  Teaser: 1,
+  Clip: 2,
+  Featurette: 3,
+  "Behind the Scenes": 4,
+};
+
+function mapVideo(video: TmdbVideo): MovieVideo | null {
+  if (video.site !== "YouTube") return null;
+
+  return {
+    id: video.id,
+    name: video.name,
+    key: video.key,
+    site: video.site,
+    type: video.type,
+    official: video.official,
+    embedUrl: `https://www.youtube.com/embed/${video.key}?autoplay=1&rel=0`,
+    watchUrl: `https://www.youtube.com/watch?v=${video.key}`,
+  };
+}
+
+function sortVideos(a: MovieVideo, b: MovieVideo): number {
+  if (a.official !== b.official) return a.official ? -1 : 1;
+
+  const typeDiff =
+    (VIDEO_TYPE_PRIORITY[a.type] ?? 99) - (VIDEO_TYPE_PRIORITY[b.type] ?? 99);
+  if (typeDiff !== 0) return typeDiff;
+
+  return a.name.localeCompare(b.name, "ko");
+}
+
+export async function fetchMovieVideos(movieId: number): Promise<MovieVideo[]> {
+  const data = await tmdbFetch<TmdbVideosResponse>(`/movie/${movieId}/videos`);
+  return data.results
+    .map(mapVideo)
+    .filter((video): video is MovieVideo => video !== null)
+    .sort(sortVideos);
+}
+
+export function getPrimaryVideo(videos: MovieVideo[]): MovieVideo | null {
+  return videos[0] ?? null;
 }
