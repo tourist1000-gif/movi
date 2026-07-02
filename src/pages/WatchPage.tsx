@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { HiArrowLeft, HiOutlineArrowTopRightOnSquare } from "react-icons/hi2";
 import LoadingScreen from "../components/LoadingScreen";
@@ -17,6 +18,12 @@ export default function WatchPage() {
     loading,
     error,
   } = useWatchPage(movieId);
+
+  useEffect(() => {
+    if (!loading && movie) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [loading, movie]);
 
   if (loading) return <LoadingScreen />;
   if (error || !movie) return <ErrorScreen message={error ?? "영화를 찾을 수 없습니다."} />;
