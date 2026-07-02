@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { HiPlay, HiInformationCircle } from "react-icons/hi2";
+import { HERO_BACKGROUND_URL } from "../constants/hero";
 import type { NowPlayingMovie } from "../types/movie";
 
 interface HeroBannerProps {
@@ -10,8 +11,9 @@ export default function HeroBanner({ movie }: HeroBannerProps) {
   return (
     <section className="relative h-[55vh] min-h-[360px] w-full md:h-[75vh] md:min-h-[480px]">
       <img
-        src={movie.backdropUrl}
-        alt={movie.title}
+        src={HERO_BACKGROUND_URL}
+        alt=""
+        aria-hidden
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />

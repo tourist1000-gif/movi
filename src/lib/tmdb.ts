@@ -1,4 +1,6 @@
 import type { MovieDetail, MovieVideo, NowPlayingMovie } from "../types/movie";
+import type { GenreRow } from "./genres";
+import { GENRE_ROW_MOVIE_COUNT } from "./genres";
 import type {
   TmdbGenre,
   TmdbGenreListResponse,
@@ -120,14 +122,102 @@ export function formatRuntime(minutes: number | null): string {
 }
 
 export async function fetchNowPlaying(): Promise<NowPlayingMovie[]> {
-  const [data, genreMap] = await Promise.all([
-    tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>("/movie/now_playing", {
-      region: "KR",
-    }),
-    fetchGenreList(),
-  ]);
+  const genreMap = await fetchGenreList();
+  return fetchNowPlayingMovies(genreMap);
+}
+
+async function fetchNowPlayingMovies(
+  genreMap: Map<number, string>,
+): Promise<NowPlayingMovie[]> {
+  const data = await tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>(
+    "/movie/now_playing",
+    { region: "KR" },
+  );
 
   return data.results.map((item) => mapListItem(item, genreMap));
+}
+
+async function fetchDiscoverMoviesByGenre(
+  genreId: number,
+  page: number,
+  genreMap: Map<number, string>,
+): Promise<NowPlayingMovie[]> {
+  const data = await tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>(
+    "/discover/movie",
+    {
+      with_genres: String(genreId),
+      sort_by: "popularity.desc",
+      include_adult: "false",
+      page: String(page),
+    },
+  );
+
+  return data.results.map((item) => mapListItem(item, genreMap));
+}
+
+export async function fetchPopularMoviesByGenre(
+  genreId: number,
+  genreMap: Map<number, string>,
+  minCount = GENRE_ROW_MOVIE_COUNT,
+): Promise<NowPlayingMovie[]> {
+  const movies: NowPlayingMovie[] = [];
+  const seen = new Set<number>();
+  let page = 1;
+
+  while (movies.length < minCount && page <= 3) {
+    const batch = await fetchDiscoverMoviesByGenre(genreId, page, genreMap);
+    if (batch.length === 0) break;
+
+    for (const movie of batch) {
+      if (!seen.has(movie.id)) {
+        seen.add(movie.id);
+        movies.push(movie);
+      }
+    }
+
+    page++;
+  }
+
+  return movies;
+}
+
+const GENRE_FETCH_CONCURRENCY = 4;
+
+export async function fetchGenreRows(
+  genreMap: Map<number, string>,
+  minMovies = GENRE_ROW_MOVIE_COUNT,
+): Promise<GenreRow[]> {
+  const genres = [...genreMap.entries()].map(([id, name]) => ({ id, name }));
+  const rows: GenreRow[] = [];
+
+  for (let i = 0; i < genres.length; i += GENRE_FETCH_CONCURRENCY) {
+    const batch = genres.slice(i, i + GENRE_FETCH_CONCURRENCY);
+    const batchRows = await Promise.all(
+      batch.map(async ({ id, name }) => ({
+        id,
+        title: name,
+        movies: await fetchPopularMoviesByGenre(id, genreMap, minMovies),
+      })),
+    );
+    rows.push(...batchRows);
+  }
+
+  return rows
+    .filter((row) => row.movies.length > 0)
+    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
+}
+
+export async function fetchHomePageData(): Promise<{
+  movies: NowPlayingMovie[];
+  genreRows: GenreRow[];
+}> {
+  const genreMap = await fetchGenreList();
+  const [movies, genreRows] = await Promise.all([
+    fetchNowPlayingMovies(genreMap),
+    fetchGenreRows(genreMap),
+  ]);
+
+  return { movies, genreRows };
 }
 
 export async function fetchMovieDetail(id: number): Promise<MovieDetail> {
