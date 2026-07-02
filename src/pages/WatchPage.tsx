@@ -88,7 +88,9 @@ export default function WatchPage() {
             <span className="font-semibold text-[#46d369]">★ {movie.rating}</span>
             <span>{movie.releaseDate}</span>
             <span>{formatRuntime(movie.runtime)}</span>
-            {movie.genres.length > 0 && <span>{movie.genres.join(" · ")}</span>}
+            {movie.genres.length > 0 && (
+              <span>{movie.genres.map((g) => g.name).join(" · ")}</span>
+            )}
           </div>
 
           <div className="mt-6">

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchNowPlaying } from "../lib/tmdb";
+import { buildGenreRows, type GenreRow } from "../lib/genres";
 import type { NowPlayingMovie } from "../types/movie";
 
 export function useNowPlaying() {
@@ -33,5 +34,10 @@ export function useNowPlaying() {
     };
   }, []);
 
-  return { movies, loading, error };
+  const genreRows: GenreRow[] = useMemo(
+    () => buildGenreRows(movies, 1),
+    [movies],
+  );
+
+  return { movies, genreRows, loading, error };
 }

@@ -1,5 +1,7 @@
 import type { MovieDetail, MovieVideo, NowPlayingMovie } from "../types/movie";
 import type {
+  TmdbGenre,
+  TmdbGenreListResponse,
   TmdbMovieDetailsResponse,
   TmdbMovieListItem,
   TmdbPaginatedResponse,
@@ -57,7 +59,10 @@ export function getBackdropUrl(path: string | null): string {
   return `${IMAGE_BASE}/w1280${path}`;
 }
 
-function mapListItem(item: TmdbMovieListItem): NowPlayingMovie {
+function mapListItem(
+  item: TmdbMovieListItem,
+  genreMap: Map<number, string>,
+): NowPlayingMovie {
   return {
     id: item.id,
     title: item.title,
@@ -66,7 +71,16 @@ function mapListItem(item: TmdbMovieListItem): NowPlayingMovie {
     overview: item.overview,
     releaseDate: item.release_date,
     rating: Math.round(item.vote_average * 10) / 10,
+    genres: (item.genre_ids ?? []).map((id) => ({
+      id,
+      name: genreMap.get(id) ?? "기타",
+    })),
   };
+}
+
+export async function fetchGenreList(): Promise<Map<number, string>> {
+  const data = await tmdbFetch<TmdbGenreListResponse>("/genre/movie/list");
+  return new Map(data.genres.map((genre: TmdbGenre) => [genre.id, genre.name]));
 }
 
 function mapDetail(data: TmdbMovieDetailsResponse): MovieDetail {
@@ -89,7 +103,7 @@ function mapDetail(data: TmdbMovieDetailsResponse): MovieDetail {
     releaseDate: data.release_date,
     rating: Math.round(data.vote_average * 10) / 10,
     runtime: data.runtime,
-    genres: data.genres.map((g) => g.name),
+    genres: data.genres.map((g) => ({ id: g.id, name: g.name })),
     director,
     cast: cast.length > 0 ? cast : ["정보 없음"],
     tagline: data.tagline,
@@ -106,11 +120,14 @@ export function formatRuntime(minutes: number | null): string {
 }
 
 export async function fetchNowPlaying(): Promise<NowPlayingMovie[]> {
-  const data = await tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>(
-    "/movie/now_playing",
-    { region: "KR" },
-  );
-  return data.results.map(mapListItem);
+  const [data, genreMap] = await Promise.all([
+    tmdbFetch<TmdbPaginatedResponse<TmdbMovieListItem>>("/movie/now_playing", {
+      region: "KR",
+    }),
+    fetchGenreList(),
+  ]);
+
+  return data.results.map((item) => mapListItem(item, genreMap));
 }
 
 export async function fetchMovieDetail(id: number): Promise<MovieDetail> {
@@ -129,7 +146,8 @@ export async function searchMovies(query: string): Promise<NowPlayingMovie[]> {
     include_adult: "false",
   });
 
-  return data.results.map(mapListItem);
+  const genreMap = await fetchGenreList();
+  return data.results.map((item) => mapListItem(item, genreMap));
 }
 
 const VIDEO_TYPE_PRIORITY: Record<string, number> = {

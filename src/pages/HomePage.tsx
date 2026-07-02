@@ -5,7 +5,7 @@ import ErrorScreen from "../components/ErrorScreen";
 import { useNowPlaying } from "../hooks/useNowPlaying";
 
 export default function HomePage() {
-  const { movies, loading, error } = useNowPlaying();
+  const { movies, genreRows, loading, error } = useNowPlaying();
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} />;
@@ -14,7 +14,6 @@ export default function HomePage() {
   }
 
   const featured = movies[0];
-  const rest = movies.slice(1);
 
   return (
     <>
@@ -23,9 +22,9 @@ export default function HomePage() {
 
         <div className="relative -mt-16 space-y-2 pb-12 md:-mt-24">
           <MovieRow title="현재 상영 중" movies={movies} />
-          {rest.length > 0 && (
-            <MovieRow title="이번 주 추천" movies={rest} />
-          )}
+          {genreRows.map((row) => (
+            <MovieRow key={row.id} title={row.title} movies={row.movies} />
+          ))}
         </div>
       </main>
     </>

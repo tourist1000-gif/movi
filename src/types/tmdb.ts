@@ -6,6 +6,11 @@ export interface TmdbMovieListItem {
   backdrop_path: string | null;
   release_date: string;
   vote_average: number;
+  genre_ids: number[];
+}
+
+export interface TmdbGenreListResponse {
+  genres: TmdbGenre[];
 }
 
 export interface TmdbPaginatedResponse<T> {

@@ -58,7 +58,7 @@ export default function MovieDetailPage() {
               <span>{movie.releaseDate}</span>
               <span>{formatRuntime(movie.runtime)}</span>
               {movie.genres.length > 0 && (
-                <span>{movie.genres.join(" · ")}</span>
+                <span>{movie.genres.map((g) => g.name).join(" · ")}</span>
               )}
             </div>
 

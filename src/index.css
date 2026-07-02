@@ -25,6 +25,11 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.movie-row:active {
+  cursor: grabbing;
 }
 
 .movie-row::-webkit-scrollbar {
